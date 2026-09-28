@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PC Doctor - Asistente Adaptativo</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: all 0.3s ease; }
+        body { background: linear-gradient(135deg, #00b4db 0%, #0083b0 50%, #0b486b 100%); min-height: 100vh; margin: 0; padding: 30px 20px; display: flex; justify-content: center; align-items: center; }
+        .container { background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(12px); padding: 35px; border-radius: 24px; border: 2px solid rgba(255, 255, 255, 0.7); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25); width: 100%; max-width: 620px; }
+        .header { text-align: center; margin-bottom: 25px; }
+        h1 { color: #005c97; font-size: 32px; margin: 0; }
+        .subtitle { color: #004e92; font-weight: 600; margin-top: 5px; font-size: 14px; }
+        .step { display: none; }
+        .step.active { display: block; }
+        label { font-weight: 700; display: block; margin-bottom: 10px; color: #003366; font-size: 16px; }
+        select, textarea { width: 100%; padding: 14px 18px; margin-top: 6px; border-radius: 16px; border: 1.5px solid #8ee4af; background: rgba(255, 255, 255, 0.95); font-size: 15px; color: #003366; outline: none; }
+        button { width: 100%; padding: 14px 20px; margin-top: 14px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.6); background: linear-gradient(180deg, #36d1dc 0%, #5b86e5 100%); color: white; font-size: 16px; font-weight: bold; cursor: pointer; }
+        button:hover { transform: translateY(-2px); background: linear-gradient(180deg, #5b86e5 0%, #36d1dc 100%); }
+        .btn-secondary { background: linear-gradient(180deg, #a8c0ff 0%, #3f2b96 100%); }
+        .btn-ia { background: linear-gradient(180deg, #11998e 0%, #38ef7d 100%); }
+
+        /* Batería de Diagnóstico */
+        .battery-container { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; background: rgba(255, 255, 255, 0.6); padding: 10px 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.8); }
+        .battery-outer { width: 75%; height: 22px; background: rgba(0, 0, 0, 0.1); border-radius: 12px; border: 2px solid #0083b0; padding: 2px; position: relative; overflow: hidden; }
+        .battery-fill { height: 100%; width: 15%; background: linear-gradient(90deg, #11998e 0%, #38ef7d 100%); border-radius: 8px; transition: width 0.4s ease-in-out; box-shadow: 0 0 10px rgba(56, 239, 125, 0.6); }
+        .battery-text { font-weight: bold; color: #004e92; font-size: 14px; width: 22%; text-align: right; }
+        
+        /* Cajas de Resultado */
+        .result-box { background: linear-gradient(135deg, rgba(235, 248, 255, 0.95) 0%, rgba(212, 236, 255, 0.95) 100%); border-radius: 20px; border: 2px solid #7fcdff; padding: 22px; margin-top: 15px; }
+        .result-title { font-weight: bold; color: #005c97; font-size: 20px; margin-bottom: 8px; border-bottom: 2px solid #a1d9ff; padding-bottom: 6px; }
+        .prob-badge { display: inline-block; background: #27ae60; color: white; font-weight: bold; font-size: 13px; padding: 4px 12px; border-radius: 12px; margin-bottom: 12px; }
+        .secondary-box { background: rgba(255, 243, 205, 0.9); border: 1.5px solid #ffeeba; border-radius: 16px; padding: 14px; margin-top: 15px; color: #856404; font-size: 14px; }
+        
+        .ia-box { background: rgba(220, 248, 230, 0.85); border: 1.5px dashed #27ae60; padding: 18px; border-radius: 20px; margin-bottom: 15px; }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 12px; background: #36d1dc; color: white; font-size: 12px; font-weight: bold; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>💻 PC Doctor</h1>
+        <div class="subtitle">Motor de Inferencia Adaptativo & IA</div>
+    </div>
+
+    <!-- PASO 1: Inicio / Módulo IA -->
+    <div id="step-1" class="step active">
+        <div class="ia-box">
+            <label for="textoIA">🤖 Módulo IA / Lenguaje Natural:</label>
+            <textarea id="textoIA" rows="2" placeholder="Ej: La computadora se me apaga sola cuando abro un juego..."></textarea>
+            <button class="btn-ia" onclick="procesarIA()">Analizar síntoma con IA ✦</button>
+        </div>
+
+        <div style="text-align: center; color: #004e92; margin: 15px 0; font-weight: bold;">— O elija de la lista —</div>
+
+        <label for="sintomaSelect">1. Seleccione una categoría de síntoma:</label>
+        <select id="sintomaSelect">
+            <option value="">-- Cargando síntomas --</option>
+        </select>
+        <button onclick="iniciarArbol()">Iniciar Evaluación Adaptativa ➔</button>
+    </div>
+
+    <!-- PASO 2: Cuestionario Dinámico Adaptativo -->
+    <div id="step-2" class="step">
+        <div class="battery-container">
+            <div class="battery-outer">
+                <div id="batteryFill" class="battery-fill"></div>
+            </div>
+            <div id="batteryText" class="battery-text">15%</div>
+        </div>
+
+        <span id="pasoContador" class="badge">Análisis de Fallas</span>
+        <label>2. Cuestionario Adaptativo:</label>
+        <p id="preguntaTexto" style="font-size: 17px; color: #003366; font-weight: 600; margin: 15px 0; background: rgba(255,255,255,0.7); padding: 18px; border-radius: 16px; border-left: 5px solid #36d1dc;"></p>
+        <button onclick="responder(true)">Sí, confirmo este comportamiento</button>
+        <button class="btn-secondary" onclick="responder(false)">No / No se presenta</button>
+    </div>
+
+    <!-- PASO 3: Diagnóstico Final -->
+    <div id="step-3" class="step">
+        <label>3. Resultado del Diagnóstico Estimado:</label>
+        <div class="result-box">
+            <div id="diagProbabilidad" class="prob-badge">100% Probabilidad</div>
+            <div id="diagTitulo" class="result-title">---</div>
+            <p style="color: #003366; font-size: 15px; line-height: 1.5; margin-top: 10px;">
+                <strong>Causa Principal Probable:</strong> <br>
+                <span id="diagCausa" style="color: #333;">---</span>
+            </p>
+            <p style="color: #003366; font-size: 15px; line-height: 1.5; margin-top: 10px;">
+                <strong>Solución Técnica Recomendada:</strong> <br>
+                <span id="diagSolucion" style="color: #333;">---</span>
+            </p>
+
+            <div class="secondary-box">
+                <strong>⚠️ Causa Secundaria / No Descartada:</strong><br>
+                <span id="diagSecundario">---</span>
+            </div>
+        </div>
+        <button onclick="reiniciarFlujo()">🔄 Realizar Nuevo Diagnóstico</button>
+    </div>
+</div>
+
+<script>
+    let preguntaActualObj = null;
+    let contadorPreguntas = 1;
+
+    document.addEventListener("DOMContentLoaded", () => {
+        fetch('/api/sintomas')
+            .then(res => res.json())
+            .then(data => {
+                const select = document.getElementById('sintomaSelect');
+                select.innerHTML = '<option value="">-- Seleccione un síntoma --</option>';
+                data.forEach(s => {
+                    const id = s.idSintoma || s.id_sintoma;
+                    select.innerHTML += `<option value="${id}">${s.nombre} (${s.categoria})</option>`;
+                });
+            })
+            .catch(err => console.error("Error al cargar síntomas:", err));
+    });
+
+    function procesarIA() {
+        const texto = document.getElementById('textoIA').value.trim().toLowerCase();
+        if (!texto) { alert("Escriba un texto para la IA."); return; }
+
+        let idSintoma = 1;
+        if (texto.includes("azul") || texto.includes("bsod") || texto.includes("error")) { idSintoma = 2; }
+        else if (texto.includes("lento") || texto.includes("disco") || texto.includes("pegado")) { idSintoma = 3; }
+
+        cargarPreguntaInicial(idSintoma);
+    }
+
+    function iniciarArbol() {
+        const idSintoma = document.getElementById('sintomaSelect').value;
+        if (!idSintoma) { alert("Seleccione un síntoma."); return; }
+        cargarPreguntaInicial(idSintoma);
+    }
+
+    function cargarPreguntaInicial(idSintoma) {
+        contadorPreguntas = 1;
+        actualizarBateria(15);
+        fetch(`/api/diagnostico/inicial/${idSintoma}`)
+            .then(res => res.json())
+            .then(pregunta => {
+                if (pregunta) {
+                    mostrarPregunta(pregunta);
+                    mostrarPaso(2);
+                } else {
+                    alert("No hay preguntas registradas para este síntoma.");
+                }
+            })
+            .catch(err => console.error("Error al obtener la pregunta inicial:", err));
+    }
+
+    function mostrarPregunta(pregunta) {
+        preguntaActualObj = pregunta;
+        document.getElementById('pasoContador').innerText = `Evaluación Técnica - Pregunta ${contadorPreguntas}`;
+        
+        const texto = pregunta.textoPregunta || pregunta.texto_pregunta || pregunta.texto || pregunta.pregunta || "Pregunta sin texto disponible";
+        document.getElementById('preguntaTexto').innerText = texto;
+    }
+
+    function responder(esSi) {
+        contadorPreguntas++;
+
+        let porcentajeCalculado = Math.min(15 + (contadorPreguntas * 12), 92);
+        actualizarBateria(porcentajeCalculado);
+
+        let siguientePreguntaId = esSi 
+            ? (preguntaActualObj.idSiguienteSi ?? preguntaActualObj.id_siguiente_si) 
+            : (preguntaActualObj.idSiguienteNo ?? preguntaActualObj.id_siguiente_no);
+
+        let diagnosticoFinalId = esSi 
+            ? (preguntaActualObj.idDiagnosticoSi ?? preguntaActualObj.id_diagnostico_si) 
+            : (preguntaActualObj.idDiagnosticoNo ?? preguntaActualObj.id_diagnostico_no);
+
+        if (diagnosticoFinalId) {
+            actualizarBateria(100);
+            fetch(`/api/diagnostico/resultado/${diagnosticoFinalId}`)
+                .then(res => res.json())
+                .then(diag => {
+                    document.getElementById('diagProbabilidad').innerText = diag.nivelProbabilidad || diag.nivel_probabilidad || "85% Probabilidad";
+                    document.getElementById('diagTitulo').innerText = diag.titulo || "Diagnóstico Encontrado";
+                    document.getElementById('diagCausa').innerText = diag.causaProbable || diag.causa_probable || "No especificada";
+                    document.getElementById('diagSolucion').innerText = diag.solucionRecomendada || diag.solucion_recomendada || "No especificada";
+                    document.getElementById('diagSecundario').innerText = diag.diagnosticoSecundario || diag.diagnostico_secundario || "Ninguna observada.";
+                    mostrarPaso(3);
+                })
+                .catch(err => console.error("Error al obtener resultado final:", err));
+        } else if (siguientePreguntaId) {
+            fetch(`/api/diagnostico/pregunta/${siguientePreguntaId}`)
+                .then(res => res.json())
+                .then(siguientePregunta => {
+                    mostrarPregunta(siguientePregunta);
+                })
+                .catch(err => console.error("Error al cargar la siguiente pregunta:", err));
+        } else {
+            alert("Atención: No hay más preguntas ni diagnóstico mapeado para esta opción en la BD.");
+        }
+    }
+
+    function actualizarBateria(porcentaje) {
+        document.getElementById('batteryFill').style.width = porcentaje + '%';
+        document.getElementById('batteryText').innerText = porcentaje + '%';
+    }
+
+    function mostrarPaso(paso) {
+        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+        document.getElementById(`step-${paso}`).classList.add('active');
+    }
+
+    function reiniciarFlujo() {
+        document.getElementById('sintomaSelect').value = "";
+        document.getElementById('textoIA').value = "";
+        actualizarBateria(15);
+        mostrarPaso(1);
+    }
+</script>
+
+</body>
+</html>
